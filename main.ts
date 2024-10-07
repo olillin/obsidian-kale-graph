@@ -108,7 +108,7 @@ type Vertex = string
 type Edge = [Vertex, Vertex]
 
 const EDGE_VALIDATE_PATTERN =
-    /^[({[]?([({[]\s*(\w+?\s*[,]\s*\w+?)\s*[)}\]](\s*[,]\s*)?)+[)}\]]?$/g
+    /^[({[]?([({[]\s*(\w+?\s*[,]\s*\w+?)\s*[)}\]](\s*[,]\s*)?)+[)}\]]?$/
 const EDGE_SEARCH_PATTERN = /[({[]\s*(\w+?)\s*[,]\s*(\w+?)\s*[)}\]]/g
 const VERTEX_SEARCH_PATTERN = /\w+/g
 
@@ -118,6 +118,7 @@ function codeBlockPostProcessor(renderSettings: RenderSettings) {
         el: HTMLElement,
         ctx: MarkdownPostProcessorContext
     ) => {
+        // Parse source
         const lines = source
             .split("\n")
             .map(line => line.trim())
@@ -142,6 +143,7 @@ function codeBlockPostProcessor(renderSettings: RenderSettings) {
             }
         }
 
+        // Render code block
         const flagsList = el.createEl("ul", { text: "Flags" })
         const verticesList = el.createEl("ul", { text: "Vertices" })
         const edgesList = el.createEl("ul", { text: "Edges" })
