@@ -67,11 +67,11 @@ class KaleGraphSettingTab extends PluginSettingTab {
                 "Will render a kale graph view if provided as the " +
                     "language of a code block."
             )
-            .addText((text) =>
+            .addText(text =>
                 text
                     .setPlaceholder("Enter your secret")
                     .setValue(this.plugin.settings.codeBlockKeyword)
-                    .onChange(async (value) => {
+                    .onChange(async value => {
                         this.plugin.settings.codeBlockKeyword = value
                         await this.plugin.saveSettings()
                     })
@@ -106,8 +106,8 @@ function markdownPostProcessor(
 ) {
     const lines = source
         .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0)
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
     if (lines.length == 0) return
 
     const flags: Flags = Object.assign({}, DEFAULT_FLAGS)
@@ -132,16 +132,16 @@ function markdownPostProcessor(
     const verticesList = el.createEl("ul", { text: "Vertices" })
     const edgesList = el.createEl("ul", { text: "Edges" })
 
-    Object.entries(flags).forEach((flag) => {
+    Object.entries(flags).forEach(flag => {
         flagsList.createEl("li", { text: `${flag[0]}: ${flag[1]}` })
     })
 
-    vertices.forEach((vertex) => {
+    vertices.forEach(vertex => {
         verticesList.createEl("li", { text: vertex })
     })
 
     console.log(edges)
-    edges.forEach((edge) => {
+    edges.forEach(edge => {
         edgesList.createEl("li", { text: edge.join(",") })
     })
 }
