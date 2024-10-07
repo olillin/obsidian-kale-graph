@@ -243,6 +243,7 @@ function renderGraph(
     }
 
     const edgeThickness = 2
+    const arrowSize = 7
     const drawEdge = (i: number, j: number) => {
         const [iX, iY] = vertexPosition(i)
         const [jX, jY] = vertexPosition(j)
@@ -252,6 +253,30 @@ function renderGraph(
         ctx.moveTo(iX + centerX, iY + centerY)
         ctx.lineTo(jX + centerX, jY + centerY)
         ctx.stroke()
+
+        // Draw arrow
+        if (directed) {
+            const lineCenterX = (iX + jX) / 2 + centerX
+            const lineCenterY = (iY + jY) / 2 + centerY
+
+            let arrowAngle = Math.atan2(jY - iY, jX - iX)
+
+            ctx.beginPath()
+            for (let k = 0; k < 3; k++) {
+                const angle = k / 3 * 2 * Math.PI + arrowAngle
+                const x = arrowSize * Math.cos(angle) + lineCenterX
+                const y = arrowSize * Math.sin(angle) + lineCenterY
+
+                if (k == 0) {
+                    ctx.moveTo(x, y)
+                } else {
+                    ctx.lineTo(x, y)
+                }
+            }
+            ctx.closePath()
+            ctx.fillStyle = settings.edgeColor
+            ctx.fill()
+        }
     }
 
 
