@@ -160,7 +160,7 @@ function codeBlockPostProcessor(renderSettings: RenderSettings) {
             edgesList.createEl("li", { text: edge.join(",") })
         })
 
-        renderGraph(el, vertices, edges, renderSettings)
+        renderGraph(el, vertices, edges, flags.directed, renderSettings)
     }
 }
 
@@ -177,10 +177,11 @@ function renderGraph(
     el: HTMLElement,
     vertices: Set<Vertex>,
     edges: Array<[Vertex, Vertex]>,
-    settings: RenderSettings
+    directed: boolean = false,
+    settings: RenderSettings,
 ): HTMLCanvasElement {
     const view = document.querySelector(".cm-sizer")
-    if (view == null) {
+    if (!view) {
         cancelRender("Failed to get note width", true)
     }
 
@@ -195,7 +196,7 @@ function renderGraph(
         },
     })
     const ctx = canvas.getContext("2d")
-    if (ctx == null) {
+    if (!ctx) {
         cancelRender("Failed to get canvas context", true)
     }
 
@@ -204,30 +205,67 @@ function renderGraph(
     ctx.fillRect(0, 0, width, height)
 
     // Draw vertices
-    const vertexRadius = 10
-    const drawVertex = (x: number, y: number) => {
+    const verticesArray = Array.from(vertices)
+
+    const bigRadius = height / 2 - 30
+    const vertexPosition = (i: number) => {
+        const angle = (2 * Math.PI * i) / verticesArray.length
+        const x = Math.cos(angle) * bigRadius
+        const y = Math.sin(angle) * bigRadius
+        return [ x, y, angle ]
+    }
+
+    const vertexRadius = 5
+    const centerX = (width - vertexRadius) / 2
+    const centerY = (height - vertexRadius) / 2
+    const drawVertex = (i: number) => {
+
+        const [x, y] = vertexPosition(i)
         ctx.beginPath()
         ctx.fillStyle = settings.vertexColor
         ctx.arc(
-            x + (width - vertexRadius) / 2,
-            y + (height - vertexRadius) / 2,
+            x + centerX,
+            y + centerY,
             vertexRadius,
             0,
             2 * Math.PI
         )
         ctx.fill()
+
+        ctx.font = '20px O'
+        ctx.strokeStyle= settings.vertexColor
+        ctx.textRendering = "optimizeLegibility"
+        ctx.fillText(
+            verticesArray[i],
+            x + centerX + vertexRadius,
+            y + centerY - vertexRadius
+        )
     }
 
-    const bigRadius = height / 2 - 30
-    const verticesArray = Array.from(vertices)
+    const edgeThickness = 2
+    const drawEdge = (i: number, j: number) => {
+        const [iX, iY] = vertexPosition(i)
+        const [jX, jY] = vertexPosition(j)
+
+        ctx.strokeStyle = settings.edgeColor
+        ctx.lineWidth = edgeThickness
+        ctx.moveTo(iX + centerX, iY + centerY)
+        ctx.lineTo(jX + centerX, jY + centerY)
+        ctx.stroke()
+    }
+
+
     for (let i = 0; i < verticesArray.length; i++) {
-        const vertex = verticesArray[i]
+        drawVertex(i)
+    }
+    for (const [u, v] of edges) {
+        const i = verticesArray.indexOf(u)
+        if (i == -1) cancelRender(`Invalid vertex ${u} in edge (${u}, ${v})`)
 
-        const angle = 2 * Math.PI * i / verticesArray.length
-        const x = Math.cos(angle) * bigRadius
-        const y = Math.sin(angle) * bigRadius
+        const j = verticesArray.indexOf(v)
+        if (j == -1) cancelRender(`Invalid vertex ${v} in edge (${u}, ${v})`)
 
-        drawVertex(x, y)
+        drawEdge(i, j)
     }
 
     return canvas
