@@ -60,23 +60,7 @@ export default function codeBlockPostProcessor(renderSettings: RenderSettings) {
             }
         }
 
-        // Render code block
-        const flagsList = el.createEl("ul", { text: "Flags" })
-        const verticesList = el.createEl("ul", { text: "Vertices" })
-        const edgesList = el.createEl("ul", { text: "Edges" })
-
-        Object.entries(flags).forEach(flag => {
-            flagsList.createEl("li", { text: `${flag[0]}: ${flag[1]}` })
-        })
-
-        vertices.forEach(vertex => {
-            verticesList.createEl("li", { text: vertex })
-        })
-
-        edges.forEach(edge => {
-            edgesList.createEl("li", { text: edge.join(",") })
-        })
-
+        // Render
         renderGraph(el, vertices, edges, flags.directed, renderSettings)
     }
 }
