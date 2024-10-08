@@ -137,7 +137,7 @@ export function renderGraph(
 
     const bigRadius = height / 2 - 30
     const vertexPosition = (i: number) => {
-        const angle = (2 * Math.PI * i) / verticesArray.length
+        const angle = (2 * Math.PI * i) / verticesArray.length - Math.PI * (2-verticesArray.length) / verticesArray.length / 2
         const x = Math.cos(angle) * bigRadius
         const y = Math.sin(angle) * bigRadius
         return [x, y, angle]
