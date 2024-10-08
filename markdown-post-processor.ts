@@ -1,7 +1,4 @@
-import {
-    MarkdownPostProcessorContext,
-    HexString,
-} from 'obsidian'
+import { MarkdownPostProcessorContext, HexString } from "obsidian"
 
 export interface RenderSettings {
     backgroundColor: HexString
@@ -61,7 +58,40 @@ export default function codeBlockPostProcessor(renderSettings: RenderSettings) {
         }
 
         // Render
-        renderGraph(el, vertices, edges, flags.directed, renderSettings)
+        try {
+            renderGraph(el, vertices, edges, flags.directed, renderSettings)
+        } catch (e) {
+            el.childNodes.forEach(child => {
+                el.removeChild(child)
+            })
+            if (
+                !(e instanceof CodeBlockPostProccessError) ||
+                e instanceof UnexpectedCodeBlockPostProccessError
+            ) {
+                const error: HTMLParagraphElement = el.createEl("p", {
+                    cls: "kale-graph-error",
+                    text: "An unexpected error occured while rendering graph:",
+                })
+                error.createEl("pre", {
+                    text: e.toString(),
+                })
+                const report = error.createEl("p", {
+                    text: "Please report this issue at ",
+                })
+                report.createEl("a", {
+                    href: "https://github.com/olillin/kale-graph/issues",
+                    text: "https://github.com/olillin/kale-graph/issues",
+                })
+            } else {
+                const error: HTMLParagraphElement = el.createEl("p", {
+                    cls: "kale-graph-error",
+                    text: "An error occured while rendering graph:",
+                })
+                error.createEl("pre", {
+                    text: `${e.message}`,
+                })
+            }
+        }
     }
 }
 
@@ -81,12 +111,9 @@ export function renderGraph(
     directed: boolean = false,
     settings: RenderSettings
 ): HTMLCanvasElement {
-    const view = document.querySelector(".cm-sizer")
-    if (!view) {
-        cancelRender("Failed to get note width", true)
-    }
-
-    const width = view.getBoundingClientRect().width
+    const documentStyle = getComputedStyle(document.body)
+    console.log(documentStyle.getPropertyValue("--file-line-width"))
+    const width = parseInt(documentStyle.getPropertyValue("--file-line-width"))
     const height = 350
 
     const canvas = el.createEl("canvas", {
@@ -178,10 +205,10 @@ export function renderGraph(
     }
     for (const [u, v] of edges) {
         const i = verticesArray.indexOf(u)
-        if (i == -1) cancelRender(`Invalid vertex ${u} in edge (${u}, ${v})`)
+        if (i == -1) cancelRender(`Undefined vertex ${u} in edge (${u}, ${v})`)
 
         const j = verticesArray.indexOf(v)
-        if (j == -1) cancelRender(`Invalid vertex ${v} in edge (${u}, ${v})`)
+        if (j == -1) cancelRender(`Undefined vertex ${v} in edge (${u}, ${v})`)
 
         drawEdge(i, j)
     }

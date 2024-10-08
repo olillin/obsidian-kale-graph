@@ -16,3 +16,7 @@ If your plugin does not need CSS, delete this file.
     padding: 0;
     height: 350px;
 }
+
+.kale-graph-error {
+    color: var(--text-error);
+}
