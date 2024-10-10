@@ -4,6 +4,9 @@ export interface RenderSettings {
     backgroundColor: HexString
     vertexColor: HexString
     edgeColor: HexString
+    vertexRadius: number
+    edgeThickness: number
+    arrowSize: number
 }
 
 export interface Flags {
@@ -32,66 +35,8 @@ export default function codeBlockPostProcessor(renderSettings: RenderSettings) {
         el: HTMLElement,
         ctx: MarkdownPostProcessorContext
     ) => {
-        // Parse source
-        const lines = source
-            .split("\n")
-            .map(line => line.trim())
-            .filter(line => line.length > 0)
-        if (lines.length == 0) return
-
-        const flags: Flags = Object.assign({}, DEFAULT_FLAGS)
-        const vertices: Set<Vertex> = new Set()
-        const edges: Array<Edge> = []
-
-        for (let line of lines) {
-            if (line.startsWith(FLAG_PREFIX)) {
-                Object.assign(flags, parseFlags(line.slice(FLAG_PREFIX.length)))
-            } else if (EDGE_VALIDATE_PATTERN.test(line)) {
-                for (let match of line.matchAll(EDGE_SEARCH_PATTERN)) {
-                    edges.push([match[1], match[2]])
-                }
-            } else {
-                for (let match of line.matchAll(VERTEX_SEARCH_PATTERN)) {
-                    vertices.add(match[0])
-                }
-            }
-        }
-
-        // Render
-        try {
-            renderGraph(el, vertices, edges, flags.directed, renderSettings)
-        } catch (e) {
-            el.childNodes.forEach(child => {
-                el.removeChild(child)
-            })
-            if (
-                !(e instanceof CodeBlockPostProccessError) ||
-                e instanceof UnexpectedCodeBlockPostProccessError
-            ) {
-                const error: HTMLParagraphElement = el.createEl("p", {
-                    cls: "kale-graph-error",
-                    text: "An unexpected error occured while rendering graph:",
-                })
-                error.createEl("pre", {
-                    text: e.toString(),
-                })
-                const report = error.createEl("p", {
-                    text: "Please report this issue at ",
-                })
-                report.createEl("a", {
-                    href: "https://github.com/olillin/kale-graph/issues",
-                    text: "https://github.com/olillin/kale-graph/issues",
-                })
-            } else {
-                const error: HTMLParagraphElement = el.createEl("p", {
-                    cls: "kale-graph-error",
-                    text: "An error occured while rendering graph:",
-                })
-                error.createEl("pre", {
-                    text: `${e.message}`,
-                })
-            }
-        }
+        const graphEl = renderCodeBlock(source, renderSettings)
+        el.appendChild(graphEl)
     }
 }
 
@@ -104,25 +49,92 @@ export function parseFlags(line: string): Partial<Flags> {
     return flags
 }
 
-export function renderGraph(
-    el: HTMLElement,
-    vertices: Set<Vertex>,
-    edges: Array<[Vertex, Vertex]>,
-    directed: boolean = false,
+export function renderCodeBlock(
+    source: string,
     settings: RenderSettings
-): HTMLCanvasElement {
+): Node {
+    const graph = parseSource(source)
+
+    // Render
+    try {
+        return renderGraph(graph, settings)
+    } catch (e) {
+        const error: HTMLParagraphElement = document.createElement("p")
+        error.className = "kale-graph-error"
+
+        if (
+            !(e instanceof CodeBlockPostProccessError) ||
+            e instanceof UnexpectedCodeBlockPostProccessError
+        ) {
+            error.innerHTML =
+                "An unexpected error occured while rendering graph:"
+
+            const pre = document.createElement("pre")
+            pre.innerHTML = e.toString()
+            error.appendChild(pre)
+
+            const report = document.createElement("p")
+            report.innerHTML =
+                "Please report this issue at " +
+                '<a href="https://github.com/olillin/kale-graph/issues">' +
+                "https://github.com/olillin/kale-graph/issues</a>"
+            pre.appendChild(report)
+        } else {
+            error.innerHTML = "An error occured while rendering graph:"
+
+            const pre = document.createElement("pre")
+            pre.innerHTML = e.message
+            error.appendChild(pre)
+        }
+        return error
+    }
+}
+
+interface GraphData {
+    flags: Flags
+    vertices: Set<Vertex>
+    edges: Array<Edge>
+}
+
+export function parseSource(source: string): GraphData {
+    const lines = source
+        .split("\n")
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+
+    const flags: Flags = Object.assign({}, DEFAULT_FLAGS)
+    const vertices: Set<Vertex> = new Set()
+    const edges: Array<Edge> = []
+
+    for (let line of lines) {
+        if (line.startsWith(FLAG_PREFIX)) {
+            Object.assign(flags, parseFlags(line.slice(FLAG_PREFIX.length)))
+        } else if (EDGE_VALIDATE_PATTERN.test(line)) {
+            for (let match of line.matchAll(EDGE_SEARCH_PATTERN)) {
+                edges.push([match[1], match[2]])
+            }
+        } else {
+            for (let match of line.matchAll(VERTEX_SEARCH_PATTERN)) {
+                vertices.add(match[0])
+            }
+        }
+    }
+
+    return { flags, vertices, edges }
+}
+
+function renderGraph(graph: GraphData, settings: RenderSettings): Node {
+    const { flags, vertices, edges } = graph
+
     const documentStyle = getComputedStyle(document.body)
-    console.log(documentStyle.getPropertyValue("--file-line-width"))
     const width = parseInt(documentStyle.getPropertyValue("--file-line-width"))
     const height = 350
 
-    const canvas = el.createEl("canvas", {
-        cls: "kale-graph-canvas",
-        attr: {
-            width: width,
-            height: height,
-        },
-    })
+    const canvas = document.createElement("canvas")
+    canvas.classList.add("kale-graph-canvas")
+    canvas.width = width
+    canvas.height = height
+
     const ctx = canvas.getContext("2d")
     if (!ctx) {
         cancelRender("Failed to get canvas context", true)
@@ -137,46 +149,46 @@ export function renderGraph(
 
     const bigRadius = height / 2 - 30
     const vertexPosition = (i: number) => {
-        const angle = (2 * Math.PI * i) / verticesArray.length - Math.PI * (2-verticesArray.length) / verticesArray.length / 2
+        const angle =
+            (2 * Math.PI * i) / verticesArray.length -
+            (Math.PI * (2 - verticesArray.length)) / verticesArray.length / 2
         const x = Math.cos(angle) * bigRadius
         const y = Math.sin(angle) * bigRadius
         return [x, y, angle]
     }
 
-    const vertexRadius = 5
-    const centerX = (width - vertexRadius) / 2
-    const centerY = (height - vertexRadius) / 2
+    const centerX = (width - settings.vertexRadius) / 2
+    const centerY = (height - settings.vertexRadius) / 2
     const drawVertex = (i: number) => {
         const [x, y] = vertexPosition(i)
         ctx.beginPath()
         ctx.fillStyle = settings.vertexColor
-        ctx.arc(x + centerX, y + centerY, vertexRadius, 0, 2 * Math.PI)
+        ctx.arc(x + centerX, y + centerY, settings.vertexRadius, 0, 2 * Math.PI)
         ctx.fill()
+        ctx.closePath()
 
         ctx.font = "20px O"
         ctx.strokeStyle = settings.vertexColor
         ctx.textRendering = "optimizeLegibility"
         ctx.fillText(
             verticesArray[i],
-            x + centerX + vertexRadius,
-            y + centerY - vertexRadius
+            x + centerX + settings.vertexRadius,
+            y + centerY - settings.vertexRadius
         )
     }
 
-    const edgeThickness = 2
-    const arrowSize = 7
     const drawEdge = (i: number, j: number) => {
         const [iX, iY] = vertexPosition(i)
         const [jX, jY] = vertexPosition(j)
 
         ctx.strokeStyle = settings.edgeColor
-        ctx.lineWidth = edgeThickness
+        ctx.lineWidth = settings.edgeThickness
         ctx.moveTo(iX + centerX, iY + centerY)
         ctx.lineTo(jX + centerX, jY + centerY)
         ctx.stroke()
 
         // Draw arrow
-        if (directed) {
+        if (flags.directed) {
             const lineCenterX = (iX + jX) / 2 + centerX
             const lineCenterY = (iY + jY) / 2 + centerY
 
@@ -185,8 +197,8 @@ export function renderGraph(
             ctx.beginPath()
             for (let k = 0; k < 3; k++) {
                 const angle = (k / 3) * 2 * Math.PI + arrowAngle
-                const x = arrowSize * Math.cos(angle) + lineCenterX
-                const y = arrowSize * Math.sin(angle) + lineCenterY
+                const x = settings.arrowSize * Math.cos(angle) + lineCenterX
+                const y = settings.arrowSize * Math.sin(angle) + lineCenterY
 
                 if (k == 0) {
                     ctx.moveTo(x, y)
@@ -200,9 +212,6 @@ export function renderGraph(
         }
     }
 
-    for (let i = 0; i < verticesArray.length; i++) {
-        drawVertex(i)
-    }
     for (const [u, v] of edges) {
         const i = verticesArray.indexOf(u)
         if (i == -1) cancelRender(`Undefined vertex ${u} in edge (${u}, ${v})`)
@@ -211,6 +220,9 @@ export function renderGraph(
         if (j == -1) cancelRender(`Undefined vertex ${v} in edge (${u}, ${v})`)
 
         drawEdge(i, j)
+    }
+    for (let i = 0; i < verticesArray.length; i++) {
+        drawVertex(i)
     }
 
     return canvas

@@ -19,6 +19,9 @@ const DEFAULT_SETTINGS: KaleGraphSettings = {
         backgroundColor: "#000000",
         vertexColor: "#ffffff",
         edgeColor: "#ffffff",
+        vertexRadius: 5,
+        edgeThickness: 2,
+        arrowSize: 7,
     },
 }
 
