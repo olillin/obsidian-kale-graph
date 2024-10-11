@@ -123,7 +123,7 @@ export function parseSource(source: string): GraphData {
     return { flags, vertices, edges }
 }
 
-function renderGraph(graph: GraphData, settings: RenderSettings): Node {
+export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
     const { flags, vertices, edges } = graph
 
     const documentStyle = getComputedStyle(document.body)
