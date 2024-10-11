@@ -7,6 +7,7 @@ export interface RenderSettings {
     vertexRadius: number
     edgeThickness: number
     arrowSize: number
+    bendiness: number
 }
 
 export interface Flags {
@@ -135,10 +136,11 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
     canvas.width = width
     canvas.height = height
 
-    const ctx = canvas.getContext("2d")
+    let ctx = canvas.getContext("2d")
     if (!ctx) {
         cancelRender("Failed to get canvas context", true)
     }
+    ctx = ctx as CanvasRenderingContext2D
 
     // Draw background
     ctx.fillStyle = settings.backgroundColor
@@ -177,28 +179,59 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         )
     }
 
-    const drawEdge = (i: number, j: number) => {
+    const drawEdge = (i: number, j: number, bend: number = 0) => {
         const [iX, iY] = vertexPosition(i)
         const [jX, jY] = vertexPosition(j)
 
         ctx.strokeStyle = settings.edgeColor
         ctx.lineWidth = settings.edgeThickness
-        ctx.moveTo(iX + centerX, iY + centerY)
-        ctx.lineTo(jX + centerX, jY + centerY)
+
+        const d =
+            bend > 0 //
+                ? (-1) ** bend * settings.bendiness / bend
+                : Infinity
+        console.log(bend, settings.bendiness, d)
+
+        const edgeAngle = Math.atan2(jY - iY, jX - iX)
+        const tangentAngle = edgeAngle + Math.PI / 2
+        const tangentX = Math.cos(tangentAngle)
+        const tangentY = Math.sin(tangentAngle)
+
+        const middleX = (iX + jX) / 2
+        const middleY = (iY + jY) / 2
+        const arcX = middleX + tangentX * d
+        const arcY = middleY + tangentY * d
+
+        const r = Math.sqrt((arcX - iX) ** 2 + (arcY - iY) ** 2)
+        const iAngle = Math.atan2(iY - arcY, iX - arcX)
+        const jAngle = Math.atan2(jY - arcY, jX - arcX)
+        ctx.beginPath()
+        if (Math.abs(d) === Infinity) {
+            ctx.moveTo(iX + centerX, iY + centerY)
+            ctx.lineTo(jX + centerX, jY + centerY)
+        } else {
+            ctx.arc(
+                arcX + centerX, //
+                arcY + centerY,
+                r,
+                d > 0 ? iAngle : jAngle,
+                d > 0 ? jAngle : iAngle
+            )
+        }
         ctx.stroke()
 
         // Draw arrow
         if (flags.directed) {
-            const lineCenterX = (iX + jX) / 2 + centerX
-            const lineCenterY = (iY + jY) / 2 + centerY
-
-            let arrowAngle = Math.atan2(jY - iY, jX - iX)
+            const offsetX = Math.abs(d) !== Infinity ? tangentX * (d - r) : 0
+            const offsetY = Math.abs(d) !== Infinity ? tangentY * (d - r) : 0
+            const arrowX = middleX + offsetX + centerX
+            const arrowY = middleY + offsetY + centerY
 
             ctx.beginPath()
             for (let k = 0; k < 3; k++) {
-                const angle = (k / 3) * 2 * Math.PI + arrowAngle
-                const x = settings.arrowSize * Math.cos(angle) + lineCenterX
-                const y = settings.arrowSize * Math.sin(angle) + lineCenterY
+                const angle = (k / 3) * 2 * Math.PI + edgeAngle
+                const x = settings.arrowSize * Math.cos(angle) + arrowX
+                const y = settings.arrowSize * Math.sin(angle) + arrowY
 
                 if (k == 0) {
                     ctx.moveTo(x, y)
@@ -212,14 +245,42 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         }
     }
 
+    const seenEdges: Map<Vertex, Map<Vertex, number>> = new Map()
     for (const [u, v] of edges) {
+        let bend = 0
+        if (seenEdges.has(u)) {
+            const seenSubEdges = seenEdges.get(u)!
+            if (seenSubEdges.has(v)) {
+                bend = seenSubEdges.get(v)!
+                seenSubEdges.set(v, bend + 1)
+            }
+        }
+        if (seenEdges.has(v)) {
+            const seenSubEdges = seenEdges.get(v)!
+            if (seenSubEdges.has(u)) {
+                bend = seenSubEdges.get(u)!
+                seenSubEdges.set(u, bend + 1)
+            }
+        }
+        if (bend === 0) {
+            let seenSubEdges: Map<Vertex, number>
+            if (seenEdges.has(u)) {
+                seenSubEdges = seenEdges.get(u)!
+            } else {
+                seenSubEdges = new Map()
+                seenEdges.set(u, seenSubEdges)
+            }
+            seenSubEdges.set(v, 1)
+        }
+        console.log(bend)
+
         const i = verticesArray.indexOf(u)
         if (i == -1) cancelRender(`Undefined vertex ${u} in edge (${u}, ${v})`)
 
         const j = verticesArray.indexOf(v)
         if (j == -1) cancelRender(`Undefined vertex ${v} in edge (${u}, ${v})`)
 
-        drawEdge(i, j)
+        drawEdge(i, j, bend)
     }
     for (let i = 0; i < verticesArray.length; i++) {
         drawVertex(i)
