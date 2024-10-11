@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto"
 import { MarkdownPostProcessorContext, HexString } from "obsidian"
 
 export interface RenderSettings {
@@ -9,7 +10,6 @@ export interface RenderSettings {
     arrowSize: number
     bendiness: number
 }
-
 
 export default function codeBlockPostProcessor(renderSettings: RenderSettings) {
     return (
@@ -89,7 +89,6 @@ interface GraphData {
     edges: Array<Edge>
 }
 
-
 export const COMMENT_PREFIX = "//"
 export const FLAG_PREFIX = "-"
 
@@ -98,6 +97,8 @@ export const EDGE_VALIDATE_PATTERN =
 export const EDGE_SEARCH_PATTERN = /\(\s*(\w+?)\s*[,]\s*(\w+?)\s*\)/g
 export const VERTEX_VALIDATE_PATTERN = /^(\w+\s*,\s*)*\w+\s*,?$/
 export const VERTEX_SEARCH_PATTERN = /\w+(?=\s*(,|$))/g
+
+export const INVISIBLE_VERTEX_PREFIX = "_"
 
 export function parseSource(source: string): GraphData {
     const lines = source
@@ -129,10 +130,17 @@ export function parseSource(source: string): GraphData {
         } else if (VERTEX_VALIDATE_PATTERN.test(line)) {
             // Vertices
             for (let match of line.matchAll(VERTEX_SEARCH_PATTERN)) {
-                vertices.add(match[0])
+                let vertex: Vertex = match[0]
+                if (
+                    vertex.startsWith(INVISIBLE_VERTEX_PREFIX) &&
+                    vertices.has(vertex)
+                ) {
+                    vertex += randomUUID()
+                }
+                vertices.add(vertex)
             }
         } else {
-            cancelRender(`Invalid input on line ${i+1}`)
+            cancelRender(`Invalid input on line ${i + 1}`)
         }
         firstLine = false
     }
@@ -208,7 +216,6 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         ctx.lineWidth = settings.edgeThickness
 
         let d = settings.bendiness * Math.ceil(bend / 2) * 2 * (-1) ** bend
-        console.log(bend, settings.bendiness, d)
 
         const edgeAngle = Math.atan2(jY - iY, jX - iX)
         const tangentAngle = edgeAngle + Math.PI / 2
@@ -264,14 +271,25 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         }
     }
 
+    // Draw edges
     const seenEdges: Map<Vertex, Map<Vertex, number>> = new Map()
     for (const [u, v] of edges) {
+        // Disallow invisible vertices
+        if (
+            u.startsWith(INVISIBLE_VERTEX_PREFIX) ||
+            v.startsWith(INVISIBLE_VERTEX_PREFIX)
+        ) {
+            cancelRender("Edges may not be connected to invisible vertices")
+        }
+
+        // Get indices
         const i = verticesArray.indexOf(u)
         if (i == -1) cancelRender(`Undefined vertex ${u} in edge (${u}, ${v})`)
 
         const j = verticesArray.indexOf(v)
         if (j == -1) cancelRender(`Undefined vertex ${v} in edge (${u}, ${v})`)
 
+        // Draw edge with bend
         let bend = 0
         if (seenEdges.has(u)) {
             const seenSubEdges = seenEdges.get(u)!
@@ -309,7 +327,11 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
 
         drawEdge(i, j, bend)
     }
+    // Draw vertices
     for (let i = 0; i < verticesArray.length; i++) {
+        if (verticesArray[i].startsWith(INVISIBLE_VERTEX_PREFIX)) {
+            continue
+        }
         drawVertex(i)
     }
 
