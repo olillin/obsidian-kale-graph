@@ -1,5 +1,6 @@
 import {
     App,
+    DropdownComponent,
     Plugin,
     PluginSettingTab,
     Setting,
@@ -22,6 +23,7 @@ const DEFAULT_SETTINGS: KaleGraphSettings = {
         vertexRadius: 5,
         edgeThickness: 2,
         arrowSize: 7,
+        bendiness: 10,
     },
 }
 
@@ -44,10 +46,12 @@ export default class KaleGraph extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        this.settings = Object.assign(
+        const data = await this.loadData()
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, data)
+        this.settings.render = Object.assign(
             {},
-            DEFAULT_SETTINGS,
-            await this.loadData()
+            DEFAULT_SETTINGS.render,
+            data.render
         )
     }
 
@@ -123,6 +127,7 @@ class KaleGraphSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings()
                 })
         )
+        container.createEl("h4", { text: "Advanced" })
         new SliderSetting(container, DEFAULT_SETTINGS.render.vertexRadius)
             .setName("Vertex radius")
             .setValue(this.plugin.settings.render.vertexRadius)
@@ -149,6 +154,17 @@ class KaleGraphSettingTab extends PluginSettingTab {
                 await this.plugin.saveSettings()
             })
             .slider.setLimits(0, 15, 0.1)
+        new SliderSetting(container, DEFAULT_SETTINGS.render.bendiness)
+            .setName("Bendiness")
+            .setDesc(
+                "How dramatically lines on the same edge should bend around each other"
+            )
+            .setValue(this.plugin.settings.render.bendiness)
+            .onChange(async value => {
+                this.plugin.settings.render.bendiness = value
+                await this.plugin.saveSettings()
+            })
+            .slider.setLimits(0, 30, 1)
     }
 }
 

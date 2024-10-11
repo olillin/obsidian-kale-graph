@@ -7,6 +7,7 @@ export interface RenderSettings {
     vertexRadius: number
     edgeThickness: number
     arrowSize: number
+    bendiness: number
 }
 
 export interface Flags {
@@ -135,10 +136,11 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
     canvas.width = width
     canvas.height = height
 
-    const ctx = canvas.getContext("2d")
+    let ctx = canvas.getContext("2d")
     if (!ctx) {
         cancelRender("Failed to get canvas context", true)
     }
+    ctx = ctx as CanvasRenderingContext2D
 
     // Draw background
     ctx.fillStyle = settings.backgroundColor
@@ -177,28 +179,57 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         )
     }
 
-    const drawEdge = (i: number, j: number) => {
+    const drawEdge = (i: number, j: number, bend: number = 0, reverse: boolean = false) => {
         const [iX, iY] = vertexPosition(i)
         const [jX, jY] = vertexPosition(j)
 
         ctx.strokeStyle = settings.edgeColor
         ctx.lineWidth = settings.edgeThickness
-        ctx.moveTo(iX + centerX, iY + centerY)
-        ctx.lineTo(jX + centerX, jY + centerY)
+
+        let d = settings.bendiness * Math.ceil(bend / 2) * 2 * (-1) ** bend
+        console.log(bend, settings.bendiness, d)
+        
+        const edgeAngle = Math.atan2(jY - iY, jX - iX)
+        const tangentAngle = edgeAngle + Math.PI / 2
+        const tangentX = Math.cos(tangentAngle)
+        const tangentY = Math.sin(tangentAngle)
+
+        const middleX = (iX + jX) / 2
+        const middleY = (iY + jY) / 2
+
+        const bentX = middleX + tangentX * d
+        const bentY = middleY + tangentY * d
+
+        const [circleX, circleY, r] = findCircle(iX, iY, jX, jY, bentX, bentY)
+
+        const iAngle = Math.atan2(iY - circleY, iX - circleX)
+        const jAngle = Math.atan2(jY - circleY, jX - circleX)
+        ctx.beginPath()
+        if (d === 0) {
+            ctx.moveTo(iX + centerX, iY + centerY)
+            ctx.lineTo(jX + centerX, jY + centerY)
+        } else {
+            ctx.arc(
+                circleX + centerX, //
+                circleY + centerY,
+                r,
+                d > 0 ? jAngle : iAngle,
+                d > 0 ? iAngle : jAngle,
+            )
+        }
         ctx.stroke()
 
         // Draw arrow
         if (flags.directed) {
-            const lineCenterX = (iX + jX) / 2 + centerX
-            const lineCenterY = (iY + jY) / 2 + centerY
-
-            let arrowAngle = Math.atan2(jY - iY, jX - iX)
-
             ctx.beginPath()
             for (let k = 0; k < 3; k++) {
-                const angle = (k / 3) * 2 * Math.PI + arrowAngle
-                const x = settings.arrowSize * Math.cos(angle) + lineCenterX
-                const y = settings.arrowSize * Math.sin(angle) + lineCenterY
+                let angle = (k / 3) * 2 * Math.PI + edgeAngle
+                if (reverse) {
+                    angle += Math.PI
+                }
+
+                const x = settings.arrowSize * Math.cos(angle) + bentX + centerX
+                const y = settings.arrowSize * Math.sin(angle) + bentY + centerY
 
                 if (k == 0) {
                     ctx.moveTo(x, y)
@@ -212,6 +243,7 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         }
     }
 
+    const seenEdges: Map<Vertex, Map<Vertex, number>> = new Map()
     for (const [u, v] of edges) {
         const i = verticesArray.indexOf(u)
         if (i == -1) cancelRender(`Undefined vertex ${u} in edge (${u}, ${v})`)
@@ -219,7 +251,36 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         const j = verticesArray.indexOf(v)
         if (j == -1) cancelRender(`Undefined vertex ${v} in edge (${u}, ${v})`)
 
-        drawEdge(i, j)
+        let bend = 0
+        if (seenEdges.has(u)) {
+            const seenSubEdges = seenEdges.get(u)!
+            if (seenSubEdges.has(v)) {
+                bend = seenSubEdges.get(v)!
+                seenSubEdges.set(v, bend + 1)
+            }
+        }
+        if (seenEdges.has(v)) {
+            const seenSubEdges = seenEdges.get(v)!
+            if (seenSubEdges.has(u)) {
+                bend = seenSubEdges.get(u)!
+                seenSubEdges.set(u, bend + 1)
+
+                drawEdge(j, i, bend, true)
+                continue
+            }
+        }
+        if (bend === 0) {
+            let seenSubEdges: Map<Vertex, number>
+            if (seenEdges.has(u)) {
+                seenSubEdges = seenEdges.get(u)!
+            } else {
+                seenSubEdges = new Map()
+                seenEdges.set(u, seenSubEdges)
+            }
+            seenSubEdges.set(v, 1)
+        }
+
+        drawEdge(i, j, bend)
     }
     for (let i = 0; i < verticesArray.length; i++) {
         drawVertex(i)
@@ -246,4 +307,60 @@ function cancelRender(message?: string, unexpected: boolean = false) {
             ? UnexpectedCodeBlockPostProccessError
             : CodeBlockPostProccessError
     )(message)
+}
+
+// https://www.geeksforgeeks.org/equation-of-circle-when-three-points-on-the-circle-are-given/
+/**
+ * Find the circle on which the given three points lie.
+ * Returns [centerX, centerY, radius]
+ */
+function findCircle(x1: number, y1: number,  x2: number,  y2: number, x3: number, y3: number): [number, number, number]
+{
+    var x12 = (x1 - x2);
+    var x13 = (x1 - x3);
+
+    var y12 =( y1 - y2);
+    var y13 = (y1 - y3);
+
+    var y31 = (y3 - y1);
+    var y21 = (y2 - y1);
+
+    var x31 = (x3 - x1);
+    var x21 = (x2 - x1);
+
+    //x1^2 - x3^2
+    var sx13 = Math.pow(x1, 2) - Math.pow(x3, 2);
+
+    // y1^2 - y3^2
+    var sy13 = Math.pow(y1, 2) - Math.pow(y3, 2);
+
+    var sx21 = Math.pow(x2, 2) - Math.pow(x1, 2);
+    var sy21 = Math.pow(y2, 2) - Math.pow(y1, 2);
+
+    var f = ((sx13) * (x12)
+            + (sy13) * (x12)
+            + (sx21) * (x13)
+            + (sy21) * (x13))
+            / (2 * ((y31) * (x12) - (y21) * (x13)));
+    var g = ((sx13) * (y12)
+            + (sy13) * (y12)
+            + (sx21) * (y13)
+            + (sy21) * (y13))
+            / (2 * ((x31) * (y12) - (x21) * (y13)));
+
+    var c = -(Math.pow(x1, 2)) - 
+    Math.pow(y1, 2) - 2 * g * x1 - 2 * f * y1;
+
+    // eqn of circle be 
+    // x^2 + y^2 + 2*g*x + 2*f*y + c = 0
+    // where centre is (h = -g, k = -f) and radius r
+    // as r^2 = h^2 + k^2 - c
+    var h = -g;
+    var k = -f;
+    var sqr_of_r = h * h + k * k - c;
+
+    // r is the radius
+    var r = Math.sqrt(sqr_of_r);
+
+    return [h, k, r]
 }
