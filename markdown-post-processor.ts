@@ -27,6 +27,7 @@ export function parseFlags(line: string): Partial<Flags> {
 
     if (line.contains("d")) flags.directed = true
     if (line.contains("s")) flags.simple = true
+    if (line.contains("a")) flags.auto = true
 
     return flags
 }
@@ -73,11 +74,13 @@ export function renderCodeBlock(
 export interface Flags {
     directed: boolean
     simple: boolean
+    auto: boolean
 }
 
 export const DEFAULT_FLAGS: Flags = {
     directed: false,
     simple: false,
+    auto: false,
 }
 
 export type Vertex = string
@@ -143,6 +146,13 @@ export function parseSource(source: string): GraphData {
             cancelRender(`Invalid input on line ${i + 1}`)
         }
         firstLine = false
+    }
+
+    if (flags.auto) {
+        for (const [u, v] of edges) {
+            vertices.add(u)
+            vertices.add(v)
+        }
     }
 
     return { flags, vertices, edges }
