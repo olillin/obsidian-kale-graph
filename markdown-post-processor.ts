@@ -10,25 +10,6 @@ export interface RenderSettings {
     bendiness: number
 }
 
-export interface Flags {
-    directed: boolean
-    simple: boolean
-}
-
-export const DEFAULT_FLAGS: Flags = {
-    directed: false,
-    simple: false,
-}
-
-export const FLAG_PREFIX = "-"
-
-export type Vertex = string
-export type Edge = [Vertex, Vertex]
-
-export const EDGE_VALIDATE_PATTERN =
-    /^[({[]?([({[]\s*(\w+?\s*[,]\s*\w+?)\s*[)}\]](\s*[,]\s*)?)+[)}\]]?$/
-export const EDGE_SEARCH_PATTERN = /[({[]\s*(\w+?)\s*[,]\s*(\w+?)\s*[)}\]]/g
-export const VERTEX_SEARCH_PATTERN = /\w+/g
 
 export default function codeBlockPostProcessor(renderSettings: RenderSettings) {
     return (
@@ -54,10 +35,8 @@ export function renderCodeBlock(
     source: string,
     settings: RenderSettings
 ): Node {
-    const graph = parseSource(source)
-
-    // Render
     try {
+        const graph = parseSource(source)
         return renderGraph(graph, settings)
     } catch (e) {
         const error: HTMLParagraphElement = document.createElement("p")
@@ -91,11 +70,34 @@ export function renderCodeBlock(
     }
 }
 
+export interface Flags {
+    directed: boolean
+    simple: boolean
+}
+
+export const DEFAULT_FLAGS: Flags = {
+    directed: false,
+    simple: false,
+}
+
+export type Vertex = string
+export type Edge = [Vertex, Vertex]
+
 interface GraphData {
     flags: Flags
     vertices: Set<Vertex>
     edges: Array<Edge>
 }
+
+
+export const COMMENT_PREFIX = "//"
+export const FLAG_PREFIX = "-"
+
+export const EDGE_VALIDATE_PATTERN =
+    /^(\(\s*(\w+?\s*[,]\s*\w+?)\s*\)(\s*[,]\s*)?)+$/
+export const EDGE_SEARCH_PATTERN = /\(\s*(\w+?)\s*[,]\s*(\w+?)\s*\)/g
+export const VERTEX_VALIDATE_PATTERN = /^(\w+\s*,\s*)*\w+\s*,?$/
+export const VERTEX_SEARCH_PATTERN = /\w+(?=\s*(,|$))/g
 
 export function parseSource(source: string): GraphData {
     const lines = source
@@ -107,18 +109,32 @@ export function parseSource(source: string): GraphData {
     const vertices: Set<Vertex> = new Set()
     const edges: Array<Edge> = []
 
-    for (let line of lines) {
-        if (line.startsWith(FLAG_PREFIX)) {
+    let firstLine = true
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+
+        // Comments
+        if (line.startsWith(COMMENT_PREFIX)) {
+            continue
+        }
+
+        if (firstLine && line.startsWith(FLAG_PREFIX)) {
+            // Flags
             Object.assign(flags, parseFlags(line.slice(FLAG_PREFIX.length)))
         } else if (EDGE_VALIDATE_PATTERN.test(line)) {
+            // Edges
             for (let match of line.matchAll(EDGE_SEARCH_PATTERN)) {
                 edges.push([match[1], match[2]])
             }
-        } else {
+        } else if (VERTEX_VALIDATE_PATTERN.test(line)) {
+            // Vertices
             for (let match of line.matchAll(VERTEX_SEARCH_PATTERN)) {
                 vertices.add(match[0])
             }
+        } else {
+            cancelRender(`Invalid input on line ${i+1}`)
         }
+        firstLine = false
     }
 
     return { flags, vertices, edges }
