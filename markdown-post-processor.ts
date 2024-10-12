@@ -226,13 +226,15 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         bend: number = 0,
         reverse: boolean = false
     ) => {
-        const [iX, iY] = vertexPosition(i)
+        const [iX, iY, vertexAngle] = vertexPosition(i)
         const [jX, jY] = vertexPosition(j)
 
         ctx.strokeStyle = settings.edgeColor
         ctx.lineWidth = settings.edgeThickness
 
-        let d = settings.bendiness * Math.ceil(bend / 2) * 2 * (-1) ** bend
+        let d = i !== j
+            ? settings.bendiness * Math.ceil(bend / 2) * 2 * (-1) ** bend
+            : settings.bendiness * (bend + 1) * 2
 
         const edgeAngle = Math.atan2(jY - iY, jX - iX)
         const tangentAngle = edgeAngle + Math.PI / 2
@@ -245,7 +247,10 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         const bentX = middleX + tangentX * d
         const bentY = middleY + tangentY * d
 
-        const [circleX, circleY, r] = findCircle(iX, iY, jX, jY, bentX, bentY)
+        const [circleX, circleY, r] =
+            i !== j
+                ? findCircle(iX, iY, jX, jY, bentX, bentY)
+                : [(iX + bentX) / 2, (iY + bentY) / 2, Math.sqrt((iX-bentX)**2 + (iY-bentY)**2)/2]
 
         const iAngle = Math.atan2(iY - circleY, iX - circleX)
         const jAngle = Math.atan2(jY - circleY, jX - circleX)
@@ -258,8 +263,8 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
                 circleX + centerX, //
                 circleY + centerY,
                 r,
-                d > 0 ? jAngle : iAngle,
-                d > 0 ? iAngle : jAngle
+                (d > 0 ? jAngle : iAngle) + 2 * Math.PI,
+                d > 0 ? iAngle : jAngle,
             )
         }
         ctx.stroke()
@@ -316,6 +321,9 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
                 if (graph.flags.simple) {
                     continue
                 }
+
+                drawEdge(i, j, bend)
+                continue
             }
         }
         if (seenEdges.has(v)) {
