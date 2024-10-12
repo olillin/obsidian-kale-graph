@@ -127,16 +127,6 @@ export function parseSource(source: string): GraphData {
             for (let match of line.matchAll(EDGE_SEARCH_PATTERN)) {
                 edges.push([match[1], match[2]])
             }
-        } else if (PATH_VALIDATE_PATTERN.test(line)) {
-            // Paths
-            let lastVertex: Vertex|null = null
-            for (let match of line.matchAll(PATH_SEARCH_PATTERN)) {
-                const vertex: Vertex = match[0]
-                if (lastVertex) {
-                    edges.push([lastVertex, vertex])
-                }
-                lastVertex = vertex
-            }
         } else if (VERTEX_VALIDATE_PATTERN.test(line)) {
             // Vertices
             for (let match of line.matchAll(VERTEX_SEARCH_PATTERN)) {
@@ -148,6 +138,16 @@ export function parseSource(source: string): GraphData {
                     vertex += randomUUID()
                 }
                 vertices.add(vertex)
+            }
+        } else if (PATH_VALIDATE_PATTERN.test(line)) {
+            // Paths
+            let lastVertex: Vertex|null = null
+            for (let match of line.matchAll(PATH_SEARCH_PATTERN)) {
+                const vertex: Vertex = match[0]
+                if (lastVertex) {
+                    edges.push([lastVertex, vertex])
+                }
+                lastVertex = vertex
             }
         } else {
             cancelRender(`Invalid input on line ${i + 1}`)
