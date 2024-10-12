@@ -98,6 +98,8 @@ export const FLAG_PREFIX = "-"
 export const EDGE_VALIDATE_PATTERN =
     /^(\(\s*(\w+?\s*[,]\s*\w+?)\s*\)(\s*[,]\s*)?)+$/
 export const EDGE_SEARCH_PATTERN = /\(\s*(\w+?)\s*[,]\s*(\w+?)\s*\)/g
+export const PATH_VALIDATE_PATTERN = /^(\w+\s*-\s*)*\w+\s*$/
+export const PATH_SEARCH_PATTERN = /\w+(?=\s*(-|$))/g
 export const VERTEX_VALIDATE_PATTERN = /^(\w+\s*,\s*)*\w+\s*,?$/
 export const VERTEX_SEARCH_PATTERN = /\w+(?=\s*(,|$))/g
 
@@ -129,6 +131,16 @@ export function parseSource(source: string): GraphData {
             // Edges
             for (let match of line.matchAll(EDGE_SEARCH_PATTERN)) {
                 edges.push([match[1], match[2]])
+            }
+        } else if (PATH_VALIDATE_PATTERN.test(line)) {
+            // Paths
+            let lastVertex: Vertex|null = null
+            for (let match of line.matchAll(PATH_SEARCH_PATTERN)) {
+                const vertex: Vertex = match[0]
+                if (lastVertex) {
+                    edges.push([lastVertex, vertex])
+                }
+                lastVertex = vertex
             }
         } else if (VERTEX_VALIDATE_PATTERN.test(line)) {
             // Vertices
