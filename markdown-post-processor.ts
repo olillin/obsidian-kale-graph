@@ -1,5 +1,4 @@
-import { randomUUID } from "crypto"
-import { MarkdownPostProcessorContext, HexString } from "obsidian"
+import { MarkdownPostProcessorContext, HexString, arrayBufferToBase64 } from "obsidian"
 
 export interface RenderSettings {
     backgroundColor: HexString
@@ -135,7 +134,7 @@ export function parseSource(source: string): GraphData {
                     vertex.startsWith(INVISIBLE_VERTEX_PREFIX) &&
                     vertices.has(vertex)
                 ) {
-                    vertex += randomUUID()
+                    vertex += random()
                 }
                 vertices.add(vertex)
             }
@@ -391,6 +390,10 @@ function cancelRender(message?: string, unexpected: boolean = false) {
             ? UnexpectedCodeBlockPostProccessError
             : CodeBlockPostProccessError
     )(message)
+}
+
+function random() {
+    return Math.random().toString(36).substring(2)
 }
 
 // https://www.geeksforgeeks.org/equation-of-circle-when-three-points-on-the-circle-are-given/
