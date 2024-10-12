@@ -176,11 +176,11 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
     canvas.width = width
     canvas.height = height
 
-    let ctx = canvas.getContext("2d")
-    if (!ctx) {
+    const nullableCtx = canvas.getContext("2d")
+    if (!nullableCtx) {
         cancelRender("Failed to get canvas context", true)
     }
-    ctx = ctx as CanvasRenderingContext2D
+    let ctx: CanvasRenderingContext2D = nullableCtx as CanvasRenderingContext2D
 
     // Draw background
     ctx.fillStyle = settings.backgroundColor
@@ -216,7 +216,6 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
 
         ctx.font = "20px O"
         ctx.strokeStyle = settings.vertexColor
-        ctx.textRendering = "optimizeLegibility"
         ctx.fillText(
             verticesArray[i],
             x + centerX + settings.vertexRadius,
