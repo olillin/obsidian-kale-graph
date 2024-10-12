@@ -46,7 +46,7 @@ export default class KaleGraph extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        const data = await this.loadData()
+        const data = (await this.loadData()) ?? {}
 
         const documentStyle = getComputedStyle(document.body)
         const codeBackgroundColor = documentStyle.getPropertyValue("--code-background")
