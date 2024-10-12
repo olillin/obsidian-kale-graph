@@ -47,6 +47,15 @@ export default class KaleGraph extends Plugin {
 
     async loadSettings() {
         const data = await this.loadData()
+
+        const documentStyle = getComputedStyle(document.body)
+        const codeBackgroundColor = documentStyle.getPropertyValue("--code-background")
+        const textColor = documentStyle.getPropertyValue("--text-normal")
+
+        DEFAULT_SETTINGS.render.backgroundColor = codeBackgroundColor
+        DEFAULT_SETTINGS.render.vertexColor = textColor
+        DEFAULT_SETTINGS.render.edgeColor = textColor
+
         this.settings = Object.assign({}, DEFAULT_SETTINGS, data)
         this.settings.render = Object.assign(
             {},
