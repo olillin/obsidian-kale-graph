@@ -49,7 +49,8 @@ export default class KaleGraph extends Plugin {
         const data = (await this.loadData()) ?? {}
 
         const documentStyle = getComputedStyle(document.body)
-        const codeBackgroundColor = documentStyle.getPropertyValue("--code-background")
+        const codeBackgroundColor =
+            documentStyle.getPropertyValue("--code-background")
         const textColor = documentStyle.getPropertyValue("--text-normal")
 
         DEFAULT_SETTINGS.render.backgroundColor = codeBackgroundColor
@@ -82,17 +83,11 @@ class KaleGraphSettingTab extends PluginSettingTab {
 
         container.empty()
 
-        // General settings
-        this.displayCodeBlockSettings(container)
-    }
-
-    displayCodeBlockSettings(container: HTMLElement) {
-        container.createEl("h2", { text: "Code blocks" })
         new Setting(container)
-            .setName("Kale Graph Keyword")
+            .setName("Code block keyword")
             .setDesc(
-                "Will render a kale graph view if provided as the " +
-                    "language of a code block."
+                "Will render a kale graph if provided as the language of a " +
+                    "code block."
             )
             .addText(text =>
                 text
@@ -103,12 +98,11 @@ class KaleGraphSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings()
                     })
             )
-        // Rendering settings
-        this.displayCodeBlockRenderingSettings(container)
+        this.displayAppearanceSettings(container)
     }
 
-    displayCodeBlockRenderingSettings(container: HTMLElement) {
-        container.createEl("h3", { text: "Rendering" })
+    displayAppearanceSettings(container: HTMLElement) {
+        new Setting(container).setName("Appearance").setHeading()
         new Setting(container).setName("Background color").addText(text =>
             text
                 .setPlaceholder(DEFAULT_SETTINGS.render.backgroundColor)
@@ -136,7 +130,7 @@ class KaleGraphSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings()
                 })
         )
-        container.createEl("h4", { text: "Advanced" })
+        new Setting(container).setName("Advanced").setHeading()
         new SliderSetting(container, DEFAULT_SETTINGS.render.vertexRadius)
             .setName("Vertex radius")
             .setValue(this.plugin.settings.render.vertexRadius)
