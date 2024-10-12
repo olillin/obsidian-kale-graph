@@ -141,7 +141,7 @@ export function parseSource(source: string): GraphData {
             }
         } else if (PATH_VALIDATE_PATTERN.test(line)) {
             // Paths
-            let lastVertex: Vertex|null = null
+            let lastVertex: Vertex | null = null
             for (let match of line.matchAll(PATH_SEARCH_PATTERN)) {
                 const vertex: Vertex = match[0]
                 if (lastVertex) {
@@ -191,17 +191,22 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
     const verticesArray = Array.from(vertices)
 
     const bigRadius = height / 2 - 30
+    const cornerAngle = (Math.PI * (2 - verticesArray.length)) / verticesArray.length
     const vertexPosition = (i: number) => {
-        const angle =
-            (2 * Math.PI * i) / verticesArray.length -
-            (Math.PI * (2 - verticesArray.length)) / verticesArray.length / 2
+        const angle = (2 * Math.PI * i) / verticesArray.length -
+            cornerAngle / 2
         const x = Math.cos(angle) * bigRadius
         const y = Math.sin(angle) * bigRadius
         return [x, y, angle]
     }
 
     const centerX = (width - settings.vertexRadius) / 2
-    const centerY = (height - settings.vertexRadius) / 2
+    var centerY = (height - settings.vertexRadius) / 2
+    // Center odd polygons
+    if (verticesArray.length % 2 === 1) {
+        centerY += (bigRadius - vertexPosition(0)[1]) / 2
+    }
+
     const drawVertex = (i: number) => {
         const [x, y] = vertexPosition(i)
         ctx.beginPath()
@@ -232,9 +237,10 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         ctx.strokeStyle = settings.edgeColor
         ctx.lineWidth = settings.edgeThickness
 
-        let d = i !== j
-            ? settings.bendiness * Math.ceil(bend / 2) * 2 * (-1) ** bend
-            : settings.bendiness * (bend + 1) * 2
+        let d =
+            i !== j
+                ? settings.bendiness * Math.ceil(bend / 2) * 2 * (-1) ** bend
+                : settings.bendiness * (bend + 1) * 2
 
         const edgeAngle = Math.atan2(jY - iY, jX - iX)
         const tangentAngle = edgeAngle + Math.PI / 2
@@ -250,7 +256,11 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
         const [circleX, circleY, r] =
             i !== j
                 ? findCircle(iX, iY, jX, jY, bentX, bentY)
-                : [(iX + bentX) / 2, (iY + bentY) / 2, Math.sqrt((iX-bentX)**2 + (iY-bentY)**2)/2]
+                : [
+                      (iX + bentX) / 2,
+                      (iY + bentY) / 2,
+                      Math.sqrt((iX - bentX) ** 2 + (iY - bentY) ** 2) / 2,
+                  ]
 
         const iAngle = Math.atan2(iY - circleY, iX - circleX)
         const jAngle = Math.atan2(jY - circleY, jX - circleX)
@@ -264,7 +274,7 @@ export function renderGraph(graph: GraphData, settings: RenderSettings): Node {
                 circleY + centerY,
                 r,
                 (d > 0 ? jAngle : iAngle) + 2 * Math.PI,
-                d > 0 ? iAngle : jAngle,
+                d > 0 ? iAngle : jAngle
             )
         }
         ctx.stroke()
