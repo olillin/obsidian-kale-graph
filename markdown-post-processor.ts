@@ -92,7 +92,7 @@ interface GraphData {
     edges: Array<Edge>
 }
 
-export const COMMENT_PREFIX = "//"
+export const COMMENT_PATTERN = /\/\/.+/
 export const FLAG_PREFIX = "-"
 
 export const EDGE_VALIDATE_PATTERN =
@@ -108,7 +108,7 @@ export const INVISIBLE_VERTEX_PREFIX = "_"
 export function parseSource(source: string): GraphData {
     const lines = source
         .split("\n")
-        .map(line => line.trim())
+        .map(line => line.replace(COMMENT_PATTERN, "").trim())
         .filter(line => line.length > 0)
 
     const flags: Flags = Object.assign({}, DEFAULT_FLAGS)
@@ -118,11 +118,6 @@ export function parseSource(source: string): GraphData {
     let firstLine = true
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i]
-
-        // Comments
-        if (line.startsWith(COMMENT_PREFIX)) {
-            continue
-        }
 
         if (firstLine && line.startsWith(FLAG_PREFIX)) {
             // Flags
