@@ -27,6 +27,7 @@ specified below.
 | `d`  | Directed | Makes the graph [directed](https://en.wikipedia.org/wiki/Directed_graph) |
 | `s`  | Simple   | Removes repeated edges                                                   |
 | `a`  | Auto     | Adds missing vertices that edges are connected to                        |
+| `f`  | Flipped  | Flips the rows and columns of an [adjacency matrix](#adjacency-matrix)   |
 
 ### Vertices
 
@@ -78,6 +79,23 @@ https://en.wikipedia.org/wiki/Cycle_(graph_theory)):
 a,b,c
 a-b-c-a // A cycle from a to a
 ```
+
+### Adjacency matrix
+
+Edges can also be represented as an [adjacency matrix](
+https://en.wikipedia.org/wiki/Adjacency_matrix), the syntax is shown below.
+Adjacency matrices can be flipped with the [**Flipped** flag](#flags).
+
+```kale
+a,b,c
+0 1 0 // Spaces are optional for single digits
+1 0 0
+0 0 2
+```
+
+> [!NOTE]
+> An adjacency matrix cannot be combined with other ways of defining edges and
+> will give an error.
 
 ### Comments
 
