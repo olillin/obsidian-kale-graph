@@ -33,6 +33,7 @@ export interface Flags {
     directed: boolean
     simple: boolean
     auto: boolean
+    flipped: boolean
 }
 
 export type Vertex = string

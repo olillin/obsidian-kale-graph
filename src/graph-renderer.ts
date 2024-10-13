@@ -14,7 +14,6 @@ export default class KaleGraphRenderer {
         graph: GraphData,
         settings: RenderSettings
     ) {
-        console.log(graph)
         this.canvas = canvas
         this.graph = graph
         this.settings = settings
