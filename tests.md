@@ -163,6 +163,75 @@ a
 a-a-a-a-a-a
 ```
 
+### Adjacency Matrix
+
+#### Undirected
+
+> Should look like an N with 1 loop on *b* and 2 loops on *d*.
+
+```kale
+a,b,c,d
+0 0 1 1
+0 2 1 0
+1 1 0 0
+1 0 0 4
+```
+
+#### No spaces
+
+> Should look identical to above.
+
+```kale
+a,b,c,d
+0011
+0210
+1100
+1004
+```
+
+#### 10+ connections
+
+```kale
+a,b
+0 15
+15 0
+```
+
+#### 1x1 matrix
+
+> Should be 1 loop.
+
+```kale
+a
+2
+```
+
+#### Directed
+
+> Should look like an N with 2 loops on *b* and 1 loops on *d*. There should be an extra edge from *d* to *a* and from *c* to *b*.
+
+```kale
+-d
+a,b,c,d
+0 0 0 1
+0 2 1 0
+1 1 0 0
+1 0 0 1
+```
+
+#### Invisible vertices
+
+> Should have the same edges as above.
+
+```kale
+-d
+_,a,_,b,c,d,_,_
+0 0 0 1
+0 2 1 0
+1 1 0 0
+1 0 0 1
+```
+
 ## Flags
 
 ### Directed
@@ -220,6 +289,18 @@ a-b-c
 a-b-c-a
 ```
 
+#### Flipped
+
+> The arrows should be going counterclockwise.
+
+```kale
+-df
+a,b,c
+0 1 0
+0 0 1
+1 0 0
+```
+
 ## Errors
 
 ### Undefined vertex
@@ -239,4 +320,72 @@ a,_
 ```kale
 a,_b
 a-_b
+```
+
+### Adjacency Matrix
+
+#### Uneven rows
+
+```kale
+a,b,c
+0101
+00
+10101
+```
+
+#### Too many columns
+
+```kale
+a,b,c
+0000
+0000
+0000
+```
+
+#### Too few columns
+
+```kale
+a,b,c
+00
+00
+00
+```
+
+#### Too many rows
+
+```kale
+a,b,c
+000
+000
+000
+000
+000
+000
+```
+
+#### Too few rows
+
+```kale
+a,b,c
+000
+000
+```
+
+#### Unsymmetrical
+
+```kale
+a,b,c
+001
+000
+000
+```
+
+#### Odd loops in undirected graph
+
+```kale
+a,b,c,d
+0 0 1 1
+0 2 1 0
+1 1 0 0
+1 0 0 3
 ```
