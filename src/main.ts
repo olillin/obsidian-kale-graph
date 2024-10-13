@@ -1,18 +1,13 @@
 import {
     App,
-    DropdownComponent,
     Plugin,
     PluginSettingTab,
     Setting,
     SliderComponent,
     TextComponent,
 } from "obsidian"
-import codeBlockPostProcessor, { RenderSettings } from "markdown-post-processor"
-
-export interface KaleGraphSettings {
-    codeBlockKeyword: string
-    render: RenderSettings
-}
+import { KaleGraphSettings } from "./types"
+import codeBlockPostProcessor from "./markdown-post-processor"
 
 const DEFAULT_SETTINGS: KaleGraphSettings = {
     codeBlockKeyword: "kale",
@@ -20,6 +15,7 @@ const DEFAULT_SETTINGS: KaleGraphSettings = {
         backgroundColor: "#000000",
         vertexColor: "#ffffff",
         edgeColor: "#ffffff",
+        bigRadius: 145,
         vertexRadius: 5,
         edgeThickness: 2,
         arrowSize: 7,
