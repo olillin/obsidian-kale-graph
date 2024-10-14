@@ -1,7 +1,7 @@
 {
     "id": "kale-graph",
     "name": "Kale Graph",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "minAppVersion": "0.15.0",
     "description": "Render mathematical graphs.",
     "author": "Oli",
