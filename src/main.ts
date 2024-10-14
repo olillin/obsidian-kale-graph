@@ -153,6 +153,7 @@ class KaleGraphSettingTab extends PluginSettingTab {
                 await this.plugin.saveSettings()
             })
             .slider.setLimits(0, 15, 0.1)
+
         new SliderSetting(container, DEFAULT_SETTINGS.render.bendiness)
             .setName("Bendiness")
             .setDesc(
@@ -164,6 +165,18 @@ class KaleGraphSettingTab extends PluginSettingTab {
                 await this.plugin.saveSettings()
             })
             .slider.setLimits(0, 30, 1)
+
+        new SliderSetting(container, DEFAULT_SETTINGS.render.bigRadius)
+            .setName("Big radius")
+            .setDesc(
+                "Radius of the big circle vertices are placed on"
+            )
+            .setValue(this.plugin.settings.render.bigRadius)
+            .onChange(async value => {
+                this.plugin.settings.render.bigRadius = value
+                await this.plugin.saveSettings()
+            })
+            .slider.setLimits(20, 300, 1)
     }
 }
 
