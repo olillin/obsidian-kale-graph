@@ -1,4 +1,4 @@
-# Kale Graph [![GitHub Release](https://img.shields.io/github/v/release/olillin/kale-graph)](https://github.com/olillin/kale-graph/releases)
+# Kale Graph [![GitHub Release](https://img.shields.io/github/v/release/olillin/obsidian-kale-graph)](https://github.com/olillin/obsidian-kale-graph/releases)
 
 **Kale Graph** is an Obsidian plugin making it easy to visualize graphs (the
 [Graph theory](https://en.wikipedia.org/wiki/Graph_theory) kind).
