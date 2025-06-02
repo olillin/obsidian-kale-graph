@@ -22,18 +22,20 @@ export const DEFAULT_FLAGS: Flags = {
 export const COMMENT_PATTERN = /\/\/.+/
 export const FLAG_PREFIX = "-"
 
+export const VERTEX_NAME_PATTERN = String.raw`[^\x00-\x1F\s,()$\\-]+(?:\s+[^\x00-\x1F\s,()$\\-]+)*`
 export const EDGE_VALIDATE_PATTERN =
-    /^(\(\s*(\w+?\s*[,]\s*\w+?)\s*\)(\s*[,]\s*)?)+$/
-export const EDGE_SEARCH_PATTERN = /\(\s*(\w+?)\s*[,]\s*(\w+?)\s*\)/g
+    RegExp(String.raw`^(\(\s*(${VERTEX_NAME_PATTERN}\s*[,]\s*${VERTEX_NAME_PATTERN})\s*\)(\s*[,]\s*)?)+$`)
+export const EDGE_SEARCH_PATTERN = RegExp(String.raw`\(\s*(${VERTEX_NAME_PATTERN})\s*[,]\s*(${VERTEX_NAME_PATTERN})\s*\)`, 'g')
 
 export const ADJACENCY_MATRIX_VALIDATE_PATTERN = /^[\s\d]+$/
 export const ADJACENCY_MATRIX_SEARCH_PATTERN = /\d+/g
 
-export const PATH_VALIDATE_PATTERN = /^(\w+\s*-\s*)*\w+\s*$/
-export const PATH_SEARCH_PATTERN = /\w+(?=\s*(-|$))/g
+export const PATH_VALIDATE_PATTERN = RegExp(String.raw`^(${VERTEX_NAME_PATTERN}\s*-\s*)*${VERTEX_NAME_PATTERN}\s*$`)
+export const PATH_SEARCH_PATTERN = RegExp(String.raw`${VERTEX_NAME_PATTERN}(?=\s*(-|$))`, 'g')
 
-export const VERTEX_VALIDATE_PATTERN = /^(\w+\s*,\s*)*\w+\s*,?$/
-export const VERTEX_SEARCH_PATTERN = /\w+(?=\s*(,|$))/g
+export const VERTEX_VALIDATE_PATTERN = RegExp(String.raw`^(${VERTEX_NAME_PATTERN}\s*,\s*)*${VERTEX_NAME_PATTERN}\s*,?$`)
+export const VERTEX_SEARCH_PATTERN = RegExp(String.raw`${VERTEX_NAME_PATTERN}(?=\s*(,|$))`, 'g')
+
 
 export const INVISIBLE_VERTEX_PREFIX = "_"
 
