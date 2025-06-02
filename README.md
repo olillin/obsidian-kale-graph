@@ -32,14 +32,16 @@ specified below.
 ### Vertices
 
 A vertex is specified simply by a name that identifies that vertex. Vertex
-names may contain letters, digits and underscores (`_`). Multiple vertices can
-be defined on a single line using the following syntax (spaces are optional):
+names may contain any character that is not a
+[control character](https://en.wikipedia.org/wiki/Control_character) or used as
+part of Kale syntax. Multiple vertices can be defined on a single line using the
+following syntax (spaces are optional):
 
 ```kale
-vertex1, vertex2, vertex3
+vertex 1, vertex 2, vertex 3
 ```
 
-If a vertex is defined more than once the later occurences are ignored.
+If a vertex is defined more than once the later definitions are silently ignored.
 
 > [!TIP]  
 > Any vertex that starts with an underscore (`_`) will be treated as an
